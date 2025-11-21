@@ -14,7 +14,6 @@ public class RegistroEntradaService {
     private VisitanteRepo visitanteRepo;
     private VeiculoRepo veiculoRepo;
     private MovimentacaoRepo movimentacaoRepo;
-
     private VeiculoFactory veiculoFactory;
 
     public RegistroEntradaService(FuncionarioRepo funcionarioRepo,
@@ -30,92 +29,78 @@ public class RegistroEntradaService {
         this.veiculoFactory = veiculoFactory;
     }
 
-
-    // -------------------------------------------------------
-    //  RF07 & RF08 — Verificação de acesso
-    // -------------------------------------------------------
+    // =========================================================
+    // VALIDAR ACESSO — RF07, RF08, RF19
+    // =========================================================
     public boolean validarAcesso(String placa) {
 
-        // 1. Verifica se a placa está cadastrada no sistema
         Veiculo veiculo = veiculoRepo.buscar(placa);
 
+        // Se a placa não existe → acesso negado
         if (veiculo == null) {
-            notificarRH("Tentativa de acesso com placa NÃO cadastrada: " + placa);
+            notificarRH("Acesso negado: placa não cadastrada: " + placa);
             return false;
         }
 
-        // 2. Verifica se pertence a funcionário
-        Funcionario funcionario = funcionarioRepo.buscarPorPlaca(placa);
-        if (funcionario != null) {
-            return true; // Funcionário autorizado
-        }
-
-        // 3. Verifica se é visitante e se o QR Code é válido
-        Visitante visitante = visitanteRepo.buscarPorPlaca(placa);
-        if (visitante != null) {
-
-            if (!visitanteRepositorioValidacao(visitante)) {
-                notificarRH("Visitante com credencial inválida: " + placa);
-                return false;
-            }
+        // 1. Verifica se é funcionário
+        Funcionario f = funcionarioRepo.buscarPorPlaca(placa);
+        if (f != null) {
             return true;
         }
 
-        // 4. Se não for funcionário nem visitante → acesso negado
-        notificarRH("Placa registrada mas sem permissão ativa: " + placa);
+        // 2. Verifica se é visitante com credencial válida
+        Visitante v = visitanteRepo.buscarPorPlaca(placa);
+        if (v != null && visitanteValido(v)) {
+            return true;
+        }
+
+        // 3. Não autorizado
+        notificarRH("Acesso negado: placa cadastrada mas sem permissão: " + placa);
         return false;
     }
 
+    // Exemplo simples de regra de credencial
+    private boolean visitanteValido(Visitante v) {
+        // Aqui entraria:
+        // - QR Code válido
+        // - Dentro da data
+        // - Não expirado
+        return true;
+    }
 
-    // -------------------------------------------------------
-    //  RF14 — Registro da entrada no sistema
-    // -------------------------------------------------------
+    // =========================================================
+    // REGISTRAR ENTRADA — RF14, RF15
+    // =========================================================
     public boolean registrarEntrada(String placa) {
 
         if (!validarAcesso(placa)) {
             return false;
         }
 
-        // Criar movimentação
+        Veiculo veiculo = veiculoRepo.buscar(placa);
+
+        GestorVagas gestor = GestorVagas.getInstance();
+        boolean ocupou = gestor.ocuparVaga(veiculo);
+
+        if (!ocupou) {
+            notificarRH("Acesso autorizado, mas SEM vagas disponíveis: " + placa);
+            return false;
+        }
+
+        // Registrar a movimentação (RF14)
         Movimentacao mov = new Movimentacao();
         mov.setPlaca(placa);
         mov.setHoraEntrada(new Date());
 
-        // Registrar movimentação no repositório
         movimentacaoRepo.registrar(mov);
 
-        // Vaga é alocada automaticamente
-        GestorVagas gestor = GestorVagas.getInstance();
-        Veiculo veiculo = veiculoRepo.buscar(placa);
-
-        boolean ocupou = gestor.ocuparVaga(veiculo);
-
-        if (!ocupou) {
-            notificarRH("Funcionário/Visitante autorizado, mas SEM VAGAS: " + placa);
-            return false;
-        }
-
         return true;
     }
 
-
-    // -------------------------------------------------------
-    // Método auxiliar: valida regra do QR Code do visitante
-    // -------------------------------------------------------
-    private boolean visitanteRepositorioValidacao(Visitante v) {
-        // Aqui você colocaria:
-        // - checagem de expirado
-        // - se já foi usado
-        // - horário permitido
-        // mas deixamos lógico simples para o skeleton:
-        return true;
+    // =========================================================
+    // RF19 — NOTIFICAÇÃO AO RH
+    // =========================================================
+    private void notificarRH(String msg) {
+        IntegracaoRH.getInstance().enviarAlerta(msg);
     }
-
-    // -------------------------------------------------------
-    // Notificação automática ao RH (RF19)
-    // -------------------------------------------------------
-    private void notificarRH(String mensagem) {
-        IntegracaoRH.getInstance().enviarAlerta(mensagem);
-    }
-
 }
