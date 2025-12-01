@@ -1,3 +1,8 @@
+package com.estacionamento.pattern.singleton; 
+
+import com.estacionamento.pattern.observer.ICameraObserver; 
+import java.awt.Image; 
+
 public class ReconhecimentoPlacas implements ICameraObserver {
 
     private static ReconhecimentoPlacas instancia;
@@ -7,7 +12,9 @@ public class ReconhecimentoPlacas implements ICameraObserver {
         return instancia;
     }
 
+   
     @Override
-    public void notificar(String placa, Image img) { }
+    public void notificar(String placa, Image img) { 
+    
+    }
 }
-
