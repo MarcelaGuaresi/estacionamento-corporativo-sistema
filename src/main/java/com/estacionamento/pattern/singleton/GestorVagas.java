@@ -9,7 +9,6 @@ import java.util.List;
 public class GestorVagas {
 
     private static GestorVagas instancia;
-
     private List<Vaga> vagas = new ArrayList<>();
 
     private GestorVagas() { }
@@ -29,12 +28,17 @@ public class GestorVagas {
         }
         return null; 
     }
-
+    
+    // Dentro de GestorVagas.java
+public List<Vaga> consultarVagas() {
+    // A lista interna onde as vagas são armazenadas
+    return vagas; 
+}
 
     public boolean ocuparVaga(Veiculo veiculo) {
         Vaga vagaLivre = buscarVagaLivre();
         if (vagaLivre == null) {
-            return false; // não há vagas
+            return false;
         }
         vagaLivre.ocupar(veiculo);
         return true;
@@ -44,15 +48,11 @@ public class GestorVagas {
         for (Vaga v : vagas) {
             if (v.getVeiculo() != null && v.getVeiculo().getPlaca().equals(placa)) {
                 v.liberar();
+                break; // Vaga liberada
             }
         }
     }
-
-    public List<Vaga> consultarVagas() {
-        return vagas;
-    }
-
-
+    
     public void adicionarVaga(Vaga v) {
         vagas.add(v);
     }
