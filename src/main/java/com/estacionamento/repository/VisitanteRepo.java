@@ -1,3 +1,6 @@
+package com.estacionamento.repository; 
+
+import com.estacionamento.domain.Visitante; 
 public class VisitanteRepo {
     public void salvar(Visitante v) { }
     public Visitante buscar(String cpf) { return null; }
