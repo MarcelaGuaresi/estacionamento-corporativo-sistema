@@ -1,6 +1,8 @@
 package com.estacionamento.service;
 
 import com.estacionamento.domain.*;
+import com.estacionamento.pattern.singleton.GestorVagas;
+import com.estacionamento.pattern.singleton.IntegracaoRH;
 import com.estacionamento.pattern.strategy.ICalculoCobranca;
 import com.estacionamento.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +12,7 @@ import java.util.Date;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*; 
 
 class RegistroSaidaServiceTest {
 
@@ -17,6 +20,8 @@ class RegistroSaidaServiceTest {
     private VeiculoRepo veiculoRepo;
     private FuncionarioRepo funcionarioRepo;
     private ICalculoCobranca estrategia;
+    private GestorVagas gestorVagas;
+    private IntegracaoRH integracaoRH;
 
     private RegistroSaidaService service;
 
@@ -26,15 +31,19 @@ class RegistroSaidaServiceTest {
         veiculoRepo = mock(VeiculoRepo.class);
         funcionarioRepo = mock(FuncionarioRepo.class);
         estrategia = mock(ICalculoCobranca.class);
+        gestorVagas = mock(GestorVagas.class);
+        integracaoRH = mock(IntegracaoRH.class);
 
         service = new RegistroSaidaService(
-                movimentacaoRepo, veiculoRepo, funcionarioRepo, estrategia
+            movimentacaoRepo, veiculoRepo, funcionarioRepo, estrategia,
+            gestorVagas, integracaoRH
         );
+
+       
+        doNothing().when(movimentacaoRepo).atualizar(any(Movimentacao.class));
     }
 
-    // =======================================================
-    // RF10 — CÁLCULO DO TEMPO DE PERMANÊNCIA
-    // =======================================================
+ 
     @Test
     void calcularTempoDeveRetornarHorasCorretas() {
 
@@ -42,33 +51,59 @@ class RegistroSaidaServiceTest {
 
         Movimentacao mov = new Movimentacao();
         mov.setPlaca(placa);
-        mov.setHoraEntrada(new Date(System.currentTimeMillis() - (60 * 60 * 1000))); // 1 hora atrás
+        mov.setHoraEntrada(new Date(System.currentTimeMillis() - (60 * 60 * 1000))); 
 
         when(movimentacaoRepo.buscarMovimentacaoAberta(placa)).thenReturn(mov);
 
         double horas = service.calcularTempo(placa);
 
         assertTrue(horas >= 1.0 && horas < 1.1);
-        verify(movimentacaoRepo).atualizar(any());
+        verify(movimentacaoRepo, times(1)).atualizar(any(Movimentacao.class));
     }
 
-    // =======================================================
-    // RF17 — ENVIO DA COBRANÇA AO RH
-    // =======================================================
+   
     @Test
     void gerarCobrancaDeveEnviarDadosAoRHSeFuncionario() {
 
         String placa = "FUN1234";
-
+        double valorEsperado = 10.0;
+        
         Movimentacao mov = new Movimentacao();
-        mov.setHoraEntrada(new Date(System.currentTimeMillis() - (30 * 60 * 1000))); // 30 min
+        mov.setHoraEntrada(new Date(System.currentTimeMillis() - (30 * 60 * 1000)));
 
         when(movimentacaoRepo.buscarMovimentacaoAberta(placa)).thenReturn(mov);
         when(funcionarioRepo.buscarPorPlaca(placa)).thenReturn(new Funcionario());
-        when(estrategia.calcular(anyDouble(), anyDouble())).thenReturn(10.0);
-
+        when(estrategia.calcular(anyDouble(), anyDouble())).thenReturn(valorEsperado);
+        
+       
+        
         Cobranca c = service.gerarCobranca(placa);
 
-        assertEquals(10.0, c.getValor());
+        assertEquals(valorEsperado, c.getValor());
+        verify(integracaoRH, times(1)).enviarDados(any(Funcionario.class), eq(valorEsperado));
+    }
+    
+  
+    @Test
+    void registrarSaidaDeveLiberarVaga() {
+        String placa = "ABC1234";
+    
+    
+    Movimentacao mov = new Movimentacao();
+    
+    mov.setHoraEntrada(new Date(System.currentTimeMillis() - 3600000)); 
+    
+    
+    when(movimentacaoRepo.buscarMovimentacaoAberta(placa)).thenReturn(mov);
+    
+    
+    doNothing().when(movimentacaoRepo).atualizar(any(Movimentacao.class)); 
+
+ 
+    
+    service.registrarSaida(placa);
+
+   
+    verify(gestorVagas, times(1)).liberarVaga(placa);
     }
 }
