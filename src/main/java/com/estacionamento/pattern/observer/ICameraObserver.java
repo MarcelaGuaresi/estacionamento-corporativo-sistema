@@ -1,13 +1,7 @@
-public class CameraOCR {
+package com.estacionamento.pattern.observer; 
 
-    private List<ICameraObserver> observers = new ArrayList<>();
+import java.awt.Image; 
 
-    public void registrarObserver(ICameraObserver o) {
-        observers.add(o);
-    }
-
-    public void capturarImagem() { }
-
-    public void notificarObservers() { }
+public interface ICameraObserver {
+    void notificar(String placa, Image imagem);
 }
-
