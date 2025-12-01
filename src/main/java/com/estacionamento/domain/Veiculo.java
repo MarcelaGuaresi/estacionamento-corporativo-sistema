@@ -1,3 +1,5 @@
+package com.estacionamento.domain;
+
 public class Veiculo {
     private String placa;
 
@@ -7,4 +9,3 @@ public class Veiculo {
 
     public String getPlaca() { return placa; }
 }
-
