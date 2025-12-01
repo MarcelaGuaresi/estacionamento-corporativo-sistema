@@ -29,9 +29,9 @@ public class GestorVagas {
         return null; 
     }
     
-    // Dentro de GestorVagas.java
+
 public List<Vaga> consultarVagas() {
-    // A lista interna onde as vagas são armazenadas
+
     return vagas; 
 }
 
