@@ -6,6 +6,7 @@ import com.estacionamento.pattern.singleton.GestorVagas;
 import com.estacionamento.pattern.singleton.IntegracaoRH;
 import com.estacionamento.repository.*;
 
+
 import java.util.Date;
 
 public class RegistroEntradaService {
@@ -15,28 +16,31 @@ public class RegistroEntradaService {
     private VeiculoRepo veiculoRepo;
     private MovimentacaoRepo movimentacaoRepo;
     private VeiculoFactory veiculoFactory;
+    private IntegracaoRH integracaoRH;
+    private GestorVagas gestorVagas;
 
     public RegistroEntradaService(FuncionarioRepo funcionarioRepo,
                                   VisitanteRepo visitanteRepo,
                                   VeiculoRepo veiculoRepo,
                                   MovimentacaoRepo movimentacaoRepo,
-                                  VeiculoFactory veiculoFactory) {
+                                  VeiculoFactory veiculoFactory,         IntegracaoRH integracaoRH, GestorVagas gestorVagas
+) {
 
         this.funcionarioRepo = funcionarioRepo;
         this.visitanteRepo = visitanteRepo;
         this.veiculoRepo = veiculoRepo;
         this.movimentacaoRepo = movimentacaoRepo;
         this.veiculoFactory = veiculoFactory;
+        this.integracaoRH = integracaoRH;
+        this.gestorVagas = gestorVagas;
     }
 
-    // =========================================================
-    // VALIDAR ACESSO — RF07, RF08, RF19
-    // =========================================================
+
     public boolean validarAcesso(String placa) {
 
         Veiculo veiculo = veiculoRepo.buscar(placa);
 
-        // Se a placa não existe → acesso negado
+       
         if (veiculo == null) {
             notificarRH("Acesso negado: placa não cadastrada: " + placa);
             return false;
@@ -54,12 +58,12 @@ public class RegistroEntradaService {
             return true;
         }
 
-        // 3. Não autorizado
+   
         notificarRH("Acesso negado: placa cadastrada mas sem permissão: " + placa);
         return false;
     }
 
-    // Exemplo simples de regra de credencial
+   
     private boolean visitanteValido(Visitante v) {
         // Aqui entraria:
         // - QR Code válido
@@ -68,10 +72,8 @@ public class RegistroEntradaService {
         return true;
     }
 
-    // =========================================================
-    // REGISTRAR ENTRADA — RF14, RF15
-    // =========================================================
     public boolean registrarEntrada(String placa) {
+        
 
         if (!validarAcesso(placa)) {
             return false;
@@ -79,15 +81,15 @@ public class RegistroEntradaService {
 
         Veiculo veiculo = veiculoRepo.buscar(placa);
 
-        GestorVagas gestor = GestorVagas.getInstance();
-        boolean ocupou = gestor.ocuparVaga(veiculo);
+       
+       boolean ocupou = this.gestorVagas.ocuparVaga(veiculo);
 
         if (!ocupou) {
             notificarRH("Acesso autorizado, mas SEM vagas disponíveis: " + placa);
             return false;
         }
 
-        // Registrar a movimentação (RF14)
+     
         Movimentacao mov = new Movimentacao();
         mov.setPlaca(placa);
         mov.setHoraEntrada(new Date());
@@ -97,10 +99,8 @@ public class RegistroEntradaService {
         return true;
     }
 
-    // =========================================================
-    // RF19 — NOTIFICAÇÃO AO RH
-    // =========================================================
+   
     private void notificarRH(String msg) {
-        IntegracaoRH.getInstance().enviarAlerta(msg);
-    }
+    this.integracaoRH.enviarAlerta(msg);
+}
 }
