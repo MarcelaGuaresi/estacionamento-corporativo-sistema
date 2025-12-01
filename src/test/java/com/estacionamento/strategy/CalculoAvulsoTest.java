@@ -1,3 +1,7 @@
+package com.estacionamento.pattern.strategy;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 class CalculoAvulsoTest {
 
     @Test
@@ -7,4 +11,3 @@ class CalculoAvulsoTest {
         assertEquals(50.0, result);
     }
 }
-
