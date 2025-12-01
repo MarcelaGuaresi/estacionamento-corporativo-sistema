@@ -1,3 +1,9 @@
+package com.estacionamento.pattern.strategy;
+
+import com.estacionamento.pattern.strategy.ICalculoCobranca;
+import com.estacionamento.pattern.strategy.CalculoMensalista;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 class CalculoMensalistaTest {
 
     @Test
