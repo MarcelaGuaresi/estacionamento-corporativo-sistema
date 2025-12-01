@@ -22,10 +22,7 @@ public class Movimentacao {
 
     public double getDuracao() { return duracao; }
 
-    /**
-     * Calcula a duração real entre a horaEntrada e a horaSaida.
-     * A duração é retornada em horas (com casas decimais).
-     */
+    
     public double calcularDuracao() {
 
         if (horaEntrada == null || horaSaida == null) {
@@ -39,4 +36,8 @@ public class Movimentacao {
         this.duracao = horas;
         return horas;
     }
+public void setDuracao(double duracao) {
+        this.duracao = duracao; 
+    }
 }
+
