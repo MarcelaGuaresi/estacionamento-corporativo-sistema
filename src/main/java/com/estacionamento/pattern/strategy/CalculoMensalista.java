@@ -1,3 +1,4 @@
+package com.estacionamento.pattern.strategy;
 public class CalculoMensalista implements ICalculoCobranca {
     @Override
     public double calcular(double valorHora, double horas) {
