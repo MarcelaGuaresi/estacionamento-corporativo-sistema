@@ -15,21 +15,25 @@ public class RegistroSaidaService {
     private VeiculoRepo veiculoRepo;
     private FuncionarioRepo funcionarioRepo;
     private ICalculoCobranca estrategiaCobranca;
+    private GestorVagas gestorVagas; 
+    private IntegracaoRH integracaoRH; 
 
+ 
     public RegistroSaidaService(MovimentacaoRepo movimentacaoRepo,
                                 VeiculoRepo veiculoRepo,
                                 FuncionarioRepo funcionarioRepo,
-                                ICalculoCobranca estrategia) {
+                                ICalculoCobranca estrategia,
+                                GestorVagas gestorVagas,
+                                IntegracaoRH integracaoRH) {
 
         this.movimentacaoRepo = movimentacaoRepo;
         this.veiculoRepo = veiculoRepo;
         this.funcionarioRepo = funcionarioRepo;
         this.estrategiaCobranca = estrategia;
+        this.gestorVagas = gestorVagas;
+        this.integracaoRH = integracaoRH;
     }
 
-    // =========================================================
-    // RF10 — CALCULAR TEMPO
-    // =========================================================
     public double calcularTempo(String placa) {
 
         Movimentacao mov = movimentacaoRepo.buscarMovimentacaoAberta(placa);
@@ -44,39 +48,30 @@ public class RegistroSaidaService {
         double horas = TimeUnit.MILLISECONDS.toMinutes(diffMs) / 60.0;
 
         mov.setDuracao(horas);
-        movimentacaoRepo.atualizar(mov);
+        movimentacaoRepo.atualizar(mov); 
 
         return horas;
     }
 
-    // =========================================================
-    // REGISTRAR SAÍDA — RF16
-    // =========================================================
     public boolean registrarSaida(String placa) {
-
         double horas = calcularTempo(placa);
 
-        // Libera vaga
-        GestorVagas.getInstance().liberarVaga(placa);
+     
+        this.gestorVagas.liberarVaga(placa); 
 
         return horas > 0;
     }
 
-    // =========================================================
-    // GERAR COBRANÇA — RF17
-    // =========================================================
     public Cobranca gerarCobranca(String placa) {
-
         double horas = calcularTempo(placa);
+        double valor = estrategiaCobranca.calcular(10.0, horas); 
 
-        double valor = estrategiaCobranca.calcular(10.0, horas); // valor/hora hipotético
+        Cobranca c = new Cobranca(placa, valor); 
 
-        Cobranca c = new Cobranca(placa, valor);
-
-        // Se for funcionário → enviar dados ao RH (RF17)
         Funcionario f = funcionarioRepo.buscarPorPlaca(placa);
         if (f != null) {
-            IntegracaoRH.getInstance().enviarDados(f, valor);
+      
+            this.integracaoRH.enviarDados(f, valor); 
         }
 
         return c;
